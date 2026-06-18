@@ -12,6 +12,8 @@
 #define SH1122_SPI_CLOCK      40000000UL
 #define SH1122_BLACK          0x0
 #define SH1122_WHITE          0xF
+#define SH1122_INVERSE        0x10
+#define SH1122_TRANSPARENT    0x11
 
 #ifndef BLACK
 #define BLACK SH1122_BLACK
@@ -87,6 +89,13 @@ private:
 
   void writeRawPixel(int16_t x, int16_t y, uint8_t gray);
   static uint8_t colorToGray(uint16_t color);
+
+  uint16_t bufIdx(int16_t x, int16_t y);
+  uint8_t getNibble(uint16_t idx, bool odd);
+  void setNibble(uint16_t idx, bool odd, uint8_t gray);
+  void invNibble(uint16_t idx, bool odd);
+  void setByte(uint16_t idx, uint8_t gray);
+  void invByte(uint16_t idx);
 
   void hardwareReset();
   void sendInitSequence();

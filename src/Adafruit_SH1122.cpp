@@ -1,16 +1,15 @@
 #include "Adafruit_SH1122.h"
 
 Adafruit_SH1122::Adafruit_SH1122(int8_t cs, int8_t dc, int8_t rst, int8_t mosi, int8_t sclk)
-    : Adafruit_GFX(SH1122_WIDTH, SH1122_HEIGHT)
-    , _cs(cs), _dc(dc), _rst(rst), _mosi(mosi), _sclk(sclk)
-    , _contrast(0x80), _invert(false)
+    : Adafruit_GFX(SH1122_WIDTH, SH1122_HEIGHT), _cs(cs), _dc(dc), _rst(rst), _mosi(mosi), _sclk(sclk), _contrast(0x80), _invert(false)
 {
     memset(_buffer, 0, SH1122_BUFSIZE);
 }
 
 Adafruit_SH1122::~Adafruit_SH1122() {}
 
-bool Adafruit_SH1122::begin(bool reset) {
+bool Adafruit_SH1122::begin(bool reset)
+{
     pinMode(_cs, OUTPUT);
     pinMode(_dc, OUTPUT);
 
@@ -23,11 +22,15 @@ bool Adafruit_SH1122::begin(bool reset) {
     SPI.begin();
 #endif
 
-    if (_rst >= 0) {
+    if (_rst >= 0)
+    {
         pinMode(_rst, OUTPUT);
-        if (reset) {
+        if (reset)
+        {
             hardwareReset();
-        } else {
+        }
+        else
+        {
             digitalWrite(_rst, HIGH);
         }
     }
@@ -38,19 +41,22 @@ bool Adafruit_SH1122::begin(bool reset) {
     return true;
 }
 
-void Adafruit_SH1122::beginTransaction() {
+void Adafruit_SH1122::beginTransaction()
+{
 #if defined(SPI_HAS_TRANSACTION)
     SPI.beginTransaction(SPISettings(SH1122_SPI_CLOCK, MSBFIRST, SPI_MODE0));
 #endif
 }
 
-void Adafruit_SH1122::endTransaction() {
+void Adafruit_SH1122::endTransaction()
+{
 #if defined(SPI_HAS_TRANSACTION)
     SPI.endTransaction();
 #endif
 }
 
-void Adafruit_SH1122::hardwareReset() {
+void Adafruit_SH1122::hardwareReset()
+{
     digitalWrite(_rst, HIGH);
     delay(10);
     digitalWrite(_rst, LOW);
@@ -59,7 +65,8 @@ void Adafruit_SH1122::hardwareReset() {
     delay(20);
 }
 
-void Adafruit_SH1122::sendInitSequence() {
+void Adafruit_SH1122::sendInitSequence()
+{
     sendCommand(SH1122_CMD_DISPLAY_OFF);
     sendCommand(SH1122_CMD_START_LINE | 0x00);
 
@@ -78,7 +85,8 @@ void Adafruit_SH1122::sendInitSequence() {
     sendCommand(SH1122_CMD_DISCHARGE);
 }
 
-void Adafruit_SH1122::sendCommand(uint8_t cmd) {
+void Adafruit_SH1122::sendCommand(uint8_t cmd)
+{
     beginTransaction();
     digitalWrite(_dc, LOW);
     digitalWrite(_cs, LOW);
@@ -87,7 +95,8 @@ void Adafruit_SH1122::sendCommand(uint8_t cmd) {
     endTransaction();
 }
 
-void Adafruit_SH1122::sendCommand2(uint8_t cmd, uint8_t arg) {
+void Adafruit_SH1122::sendCommand2(uint8_t cmd, uint8_t arg)
+{
     beginTransaction();
     digitalWrite(_dc, LOW);
     digitalWrite(_cs, LOW);
@@ -97,18 +106,21 @@ void Adafruit_SH1122::sendCommand2(uint8_t cmd, uint8_t arg) {
     endTransaction();
 }
 
-void Adafruit_SH1122::sendData(const uint8_t *data, uint16_t len) {
+void Adafruit_SH1122::sendData(const uint8_t *data, uint16_t len)
+{
     beginTransaction();
     digitalWrite(_dc, HIGH);
     digitalWrite(_cs, LOW);
-    while (len--) {
+    while (len--)
+    {
         SPI.transfer(*data++);
     }
     digitalWrite(_cs, HIGH);
     endTransaction();
 }
 
-void Adafruit_SH1122::sendDataByte(uint8_t data) {
+void Adafruit_SH1122::sendDataByte(uint8_t data)
+{
     beginTransaction();
     digitalWrite(_dc, HIGH);
     digitalWrite(_cs, LOW);
@@ -117,63 +129,116 @@ void Adafruit_SH1122::sendDataByte(uint8_t data) {
     endTransaction();
 }
 
-uint8_t Adafruit_SH1122::colorToGray(uint16_t color) {
+uint8_t Adafruit_SH1122::colorToGray(uint16_t color)
+{
     return color & 0x0F;
 }
 
-void Adafruit_SH1122::writeRawPixel(int16_t x, int16_t y, uint8_t gray) {
-    if (x < 0 || x >= SH1122_WIDTH || y < 0 || y >= SH1122_HEIGHT)
-        return;
+uint16_t Adafruit_SH1122::bufIdx(int16_t x, int16_t y)
+{
+    return (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
+}
 
-    uint16_t idx = (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
+uint8_t Adafruit_SH1122::getNibble(uint16_t idx, bool odd)
+{
+    return odd ? (_buffer[idx] >> 4) : (_buffer[idx] & 0x0F);
+}
 
-    if (x & 1)
-        _buffer[idx] = (_buffer[idx] & 0x0F) | (gray << 4);
+void Adafruit_SH1122::setNibble(uint16_t idx, bool odd, uint8_t gray)
+{
+    if (odd)
+        _buffer[idx] = (_buffer[idx] & 0x0F) | ((gray & 0x0F) << 4);
     else
         _buffer[idx] = (_buffer[idx] & 0xF0) | (gray & 0x0F);
 }
 
-void Adafruit_SH1122::drawPixel(int16_t x, int16_t y, uint16_t color) {
+void Adafruit_SH1122::invNibble(uint16_t idx, bool odd)
+{
+    _buffer[idx] ^= odd ? 0xF0 : 0x0F;
+}
+
+void Adafruit_SH1122::setByte(uint16_t idx, uint8_t gray)
+{
+    _buffer[idx] = gray | (gray << 4);
+}
+
+void Adafruit_SH1122::invByte(uint16_t idx)
+{
+    _buffer[idx] ^= 0xFF;
+}
+
+void Adafruit_SH1122::writeRawPixel(int16_t x, int16_t y, uint8_t gray)
+{
+    if (x < 0 || x >= SH1122_WIDTH || y < 0 || y >= SH1122_HEIGHT)
+        return;
+    setNibble(bufIdx(x, y), x & 1, gray);
+}
+
+void Adafruit_SH1122::drawPixel(int16_t x, int16_t y, uint16_t color)
+{
+    if (color == SH1122_INVERSE)
+    {
+        writeRawPixel(x, y, getPixel(x, y) ^ 0x0F);
+        return;
+    }
+    if (color == SH1122_TRANSPARENT)
+        return;
     writeRawPixel(x, y, colorToGray(color));
 }
 
-void Adafruit_SH1122::writePixel(int16_t x, int16_t y, uint16_t color) {
+void Adafruit_SH1122::writePixel(int16_t x, int16_t y, uint16_t color)
+{
+    if (color == SH1122_INVERSE)
+    {
+        writeRawPixel(x, y, getPixel(x, y) ^ 0x0F);
+        return;
+    }
+    if (color == SH1122_TRANSPARENT)
+        return;
     writeRawPixel(x, y, colorToGray(color));
 }
 
-void Adafruit_SH1122::setRawPixel(int16_t x, int16_t y, uint8_t gray) {
+void Adafruit_SH1122::setRawPixel(int16_t x, int16_t y, uint8_t gray)
+{
     writeRawPixel(x, y, gray & 0x0F);
 }
 
-uint8_t Adafruit_SH1122::getPixel(int16_t x, int16_t y) {
+uint8_t Adafruit_SH1122::getPixel(int16_t x, int16_t y)
+{
     if (x < 0 || x >= SH1122_WIDTH || y < 0 || y >= SH1122_HEIGHT)
         return 0;
-
-    uint16_t idx = (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
-
-    if (x & 1)
-        return (_buffer[idx] >> 4) & 0x0F;
-    else
-        return _buffer[idx] & 0x0F;
+    return getNibble(bufIdx(x, y), x & 1);
 }
 
-void Adafruit_SH1122::fillScreen(uint16_t color) {
+void Adafruit_SH1122::fillScreen(uint16_t color)
+{
+    if (color == SH1122_INVERSE)
+    {
+        for (uint16_t i = 0; i < SH1122_BUFSIZE; i++)
+            invByte(i);
+        return;
+    }
+    if (color == SH1122_TRANSPARENT)
+        return;
     uint8_t gray = colorToGray(color);
-    uint8_t fillByte = gray | (gray << 4);
-    memset(_buffer, fillByte, SH1122_BUFSIZE);
+    memset(_buffer, gray | (gray << 4), SH1122_BUFSIZE);
 }
 
-void Adafruit_SH1122::startWrite(void) {
+void Adafruit_SH1122::startWrite(void)
+{
 }
 
-void Adafruit_SH1122::endWrite(void) {
+void Adafruit_SH1122::endWrite(void)
+{
 }
 
-void Adafruit_SH1122::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
+void Adafruit_SH1122::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
+{
     if (x < 0 || x >= SH1122_WIDTH)
         return;
 
-    if (y < 0) {
+    if (y < 0)
+    {
         h += y;
         y = 0;
     }
@@ -182,27 +247,37 @@ void Adafruit_SH1122::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t c
     if (h <= 0)
         return;
 
-    uint8_t gray = colorToGray(color);
-    uint16_t idx = (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
+    if (color == SH1122_TRANSPARENT)
+        return;
 
-    if (x & 1) {
-        for (int16_t i = 0; i < h; i++) {
-            _buffer[idx] = (_buffer[idx] & 0x0F) | (gray << 4);
+    uint16_t idx = bufIdx(x, y);
+    bool odd = x & 1;
+
+    if (color == SH1122_INVERSE)
+    {
+        for (int16_t i = 0; i < h; i++)
+        {
+            invNibble(idx, odd);
             idx += SH1122_BYTES_PER_ROW;
         }
-    } else {
-        for (int16_t i = 0; i < h; i++) {
-            _buffer[idx] = (_buffer[idx] & 0xF0) | (gray & 0x0F);
-            idx += SH1122_BYTES_PER_ROW;
-        }
+        return;
+    }
+
+    uint8_t gray = colorToGray(color);
+    for (int16_t i = 0; i < h; i++)
+    {
+        setNibble(idx, odd, gray);
+        idx += SH1122_BYTES_PER_ROW;
     }
 }
 
-void Adafruit_SH1122::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
+void Adafruit_SH1122::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
+{
     if (y < 0 || y >= SH1122_HEIGHT)
         return;
 
-    if (x < 0) {
+    if (x < 0)
+    {
         w += x;
         x = 0;
     }
@@ -211,66 +286,132 @@ void Adafruit_SH1122::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t c
     if (w <= 0)
         return;
 
+    if (color == SH1122_TRANSPARENT)
+        return;
+
+    uint16_t idx = bufIdx(x, y);
+    int16_t rem = w;
+
+    if (color == SH1122_INVERSE)
+    {
+        if ((x & 1) && rem > 0)
+        {
+            invNibble(idx, true);
+            idx++;
+            rem--;
+        }
+        while (rem >= 2)
+        {
+            invByte(idx);
+            idx++;
+            rem -= 2;
+        }
+        if (rem > 0)
+        {
+            invNibble(idx, false);
+        }
+        return;
+    }
+
     uint8_t gray = colorToGray(color);
-    uint16_t idx = (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
-    uint8_t startOdd = x & 1;
-
-    if (startOdd && w > 0) {
-        _buffer[idx] = (_buffer[idx] & 0x0F) | (gray << 4);
+    if ((x & 1) && rem > 0)
+    {
+        setNibble(idx, true, gray);
         idx++;
-        w--;
-        x++;
+        rem--;
     }
-
-    while (w >= 2) {
-        _buffer[idx] = gray | (gray << 4);
+    while (rem >= 2)
+    {
+        setByte(idx, gray);
         idx++;
-        w -= 2;
+        rem -= 2;
     }
-
-    if (w > 0) {
-        _buffer[idx] = (_buffer[idx] & 0xF0) | (gray & 0x0F);
+    if (rem > 0)
+    {
+        setNibble(idx, false, gray);
     }
 }
 
-void Adafruit_SH1122::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
-    if (x < 0) { w += x; x = 0; }
-    if (y < 0) { h += y; y = 0; }
-    if (x + w > SH1122_WIDTH)  w = SH1122_WIDTH - x;
-    if (y + h > SH1122_HEIGHT) h = SH1122_HEIGHT - y;
-    if (w <= 0 || h <= 0) return;
+void Adafruit_SH1122::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+{
+    if (x < 0)
+    {
+        w += x;
+        x = 0;
+    }
+    if (y < 0)
+    {
+        h += y;
+        y = 0;
+    }
+    if (x + w > SH1122_WIDTH)
+        w = SH1122_WIDTH - x;
+    if (y + h > SH1122_HEIGHT)
+        h = SH1122_HEIGHT - y;
+    if (w <= 0 || h <= 0)
+        return;
 
-    uint8_t gray = colorToGray(color);
-    uint8_t fillByte = gray | (gray << 4);
+    if (color == SH1122_TRANSPARENT)
+        return;
 
     uint16_t rowBase = (uint16_t)y * SH1122_BYTES_PER_ROW;
     uint16_t colStart = (uint16_t)x >> 1;
+    bool startOdd = x & 1;
 
-    for (int16_t row = 0; row < h; row++) {
+    if (color == SH1122_INVERSE)
+    {
+        for (int16_t row = 0; row < h; row++)
+        {
+            uint16_t idx = rowBase + (uint16_t)row * SH1122_BYTES_PER_ROW + colStart;
+            int16_t rem = w;
+            if (startOdd && rem > 0)
+            {
+                invNibble(idx, true);
+                idx++;
+                rem--;
+            }
+            while (rem >= 2)
+            {
+                invByte(idx);
+                idx++;
+                rem -= 2;
+            }
+            if (rem > 0)
+            {
+                invNibble(idx, false);
+            }
+        }
+        return;
+    }
+
+    uint8_t gray = colorToGray(color);
+    for (int16_t row = 0; row < h; row++)
+    {
         uint16_t idx = rowBase + (uint16_t)row * SH1122_BYTES_PER_ROW + colStart;
-        int16_t remaining = w;
-        uint8_t col = (uint8_t)(x & 1);
-
-        if (col && remaining > 0) {
-            _buffer[idx] = (_buffer[idx] & 0x0F) | (gray << 4);
+        int16_t rem = w;
+        if (startOdd && rem > 0)
+        {
+            setNibble(idx, true, gray);
             idx++;
-            remaining--;
+            rem--;
         }
-
-        while (remaining >= 2) {
-            _buffer[idx] = fillByte;
+        while (rem >= 2)
+        {
+            setByte(idx, gray);
             idx++;
-            remaining -= 2;
+            rem -= 2;
         }
-
-        if (remaining > 0) {
-            _buffer[idx] = (_buffer[idx] & 0xF0) | (gray & 0x0F);
+        if (rem > 0)
+        {
+            setNibble(idx, false, gray);
         }
     }
 }
 
-void Adafruit_SH1122::display() {
-    for (uint8_t row = 0; row < SH1122_HEIGHT; row++) {
+void Adafruit_SH1122::display()
+{
+    for (uint8_t row = 0; row < SH1122_HEIGHT; row++)
+    {
         beginTransaction();
 
         digitalWrite(_dc, LOW);
@@ -284,7 +425,8 @@ void Adafruit_SH1122::display() {
         digitalWrite(_dc, HIGH);
 
         const uint8_t *rowPtr = _buffer + (uint16_t)row * SH1122_BYTES_PER_ROW;
-        for (uint16_t col = 0; col < SH1122_BYTES_PER_ROW; col++) {
+        for (uint16_t col = 0; col < SH1122_BYTES_PER_ROW; col++)
+        {
             SPI.transfer(rowPtr[col]);
         }
 
@@ -293,21 +435,25 @@ void Adafruit_SH1122::display() {
     }
 }
 
-void Adafruit_SH1122::clearDisplay() {
+void Adafruit_SH1122::clearDisplay()
+{
     memset(_buffer, 0, SH1122_BUFSIZE);
     display();
 }
 
-void Adafruit_SH1122::setContrast(uint8_t contrast) {
+void Adafruit_SH1122::setContrast(uint8_t contrast)
+{
     _contrast = contrast;
     sendCommand2(SH1122_CMD_CONTRAST, _contrast);
 }
 
-void Adafruit_SH1122::setPowerSave(bool save) {
+void Adafruit_SH1122::setPowerSave(bool save)
+{
     sendCommand(save ? SH1122_CMD_DISPLAY_OFF : SH1122_CMD_DISPLAY_ON);
 }
 
-void Adafruit_SH1122::invertDisplay(bool i) {
+void Adafruit_SH1122::invertDisplay(bool i)
+{
     _invert = i;
     sendCommand(i ? SH1122_CMD_DISPLAY_INVERT : SH1122_CMD_DISPLAY_NORMAL);
 }

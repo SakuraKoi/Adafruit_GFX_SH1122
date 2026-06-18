@@ -92,6 +92,8 @@ private:
   void writeRawPixel(int16_t x, int16_t y, uint8_t gray);
   static uint8_t colorToGray(uint16_t color);
 
+  void logicalToPhysical(int16_t &x, int16_t &y);
+
   uint16_t bufIdx(int16_t x, int16_t y);
   uint8_t getNibble(uint16_t idx, bool odd);
   void setNibble(uint16_t idx, bool odd, uint8_t gray);

@@ -139,6 +139,28 @@ uint16_t Adafruit_SH1122::bufIdx(int16_t x, int16_t y)
     return (uint16_t)y * SH1122_BYTES_PER_ROW + ((uint16_t)x >> 1);
 }
 
+void Adafruit_SH1122::logicalToPhysical(int16_t &x, int16_t &y)
+{
+    int16_t t;
+    switch (getRotation())
+    {
+    case 1:
+        t = x;
+        x = WIDTH - 1 - y;
+        y = t;
+        break;
+    case 2:
+        x = WIDTH - 1 - x;
+        y = HEIGHT - 1 - y;
+        break;
+    case 3:
+        t = x;
+        x = y;
+        y = HEIGHT - 1 - t;
+        break;
+    }
+}
+
 uint8_t Adafruit_SH1122::getNibble(uint16_t idx, bool odd)
 {
     return odd ? (_buffer[idx] >> 4) : (_buffer[idx] & 0x0F);
@@ -169,8 +191,9 @@ void Adafruit_SH1122::invByte(uint16_t idx)
 
 void Adafruit_SH1122::writeRawPixel(int16_t x, int16_t y, uint8_t gray)
 {
-    if (x < 0 || x >= SH1122_WIDTH || y < 0 || y >= SH1122_HEIGHT)
+    if (x < 0 || x >= _width || y < 0 || y >= _height)
         return;
+    logicalToPhysical(x, y);
     setNibble(bufIdx(x, y), x & 1, gray);
 }
 
@@ -229,8 +252,9 @@ void Adafruit_SH1122::setRawPixel(int16_t x, int16_t y, uint8_t gray)
 
 uint8_t Adafruit_SH1122::getPixel(int16_t x, int16_t y)
 {
-    if (x < 0 || x >= SH1122_WIDTH || y < 0 || y >= SH1122_HEIGHT)
+    if (x < 0 || x >= _width || y < 0 || y >= _height)
         return 0;
+    logicalToPhysical(x, y);
     return getNibble(bufIdx(x, y), x & 1);
 }
 
@@ -258,6 +282,15 @@ void Adafruit_SH1122::endWrite(void)
 
 void Adafruit_SH1122::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
 {
+    if (getRotation() != 0)
+    {
+        if (color == SH1122_TRANSPARENT)
+            return;
+        for (int16_t i = 0; i < h; i++)
+            writePixel(x, y + i, color);
+        return;
+    }
+
     if (x < 0 || x >= SH1122_WIDTH)
         return;
 
@@ -297,6 +330,15 @@ void Adafruit_SH1122::writeFastVLine(int16_t x, int16_t y, int16_t h, uint16_t c
 
 void Adafruit_SH1122::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
 {
+    if (getRotation() != 0)
+    {
+        if (color == SH1122_TRANSPARENT)
+            return;
+        for (int16_t i = 0; i < w; i++)
+            writePixel(x + i, y, color);
+        return;
+    }
+
     if (y < 0 || y >= SH1122_HEIGHT)
         return;
 
@@ -358,6 +400,16 @@ void Adafruit_SH1122::writeFastHLine(int16_t x, int16_t y, int16_t w, uint16_t c
 
 void Adafruit_SH1122::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
+    if (getRotation() != 0)
+    {
+        if (color == SH1122_TRANSPARENT)
+            return;
+        for (int16_t row = 0; row < h; row++)
+            for (int16_t col = 0; col < w; col++)
+                writePixel(x + col, y + row, color);
+        return;
+    }
+
     if (x < 0)
     {
         w += x;

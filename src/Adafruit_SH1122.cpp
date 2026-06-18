@@ -198,6 +198,30 @@ void Adafruit_SH1122::writePixel(int16_t x, int16_t y, uint16_t color)
     writeRawPixel(x, y, colorToGray(color));
 }
 
+void Adafruit_SH1122::drawImage(int16_t x, int16_t y, const uint8_t *data)
+{
+    uint16_t imgW = data[0] | ((uint16_t)data[1] << 8);
+    uint16_t imgH = data[2] | ((uint16_t)data[3] << 8);
+    const uint8_t *pixels = data + 4;
+    uint16_t imgBPR = (imgW + 1) >> 1;
+
+    for (uint16_t row = 0; row < imgH; row++)
+    {
+        uint16_t imgIdx = (uint16_t)row * imgBPR;
+
+        for (uint16_t col = 0; col < imgW; col += 2)
+        {
+            uint8_t byte = pixels[imgIdx + (col >> 1)];
+            uint8_t lo = byte & 0x0F;
+            uint8_t hi = byte >> 4;
+
+            writeRawPixel(x + (int16_t)col, y + (int16_t)row, lo);
+            if (col + 1 < imgW)
+                writeRawPixel(x + (int16_t)(col + 1), y + (int16_t)row, hi);
+        }
+    }
+}
+
 void Adafruit_SH1122::setRawPixel(int16_t x, int16_t y, uint8_t gray)
 {
     writeRawPixel(x, y, gray & 0x0F);

@@ -72,6 +72,8 @@ public:
 
   uint8_t getPixel(int16_t x, int16_t y);
 
+  void drawImage(int16_t x, int16_t y, const uint8_t *data);
+
   void setRawPixel(int16_t x, int16_t y, uint8_t gray);
 
 private:

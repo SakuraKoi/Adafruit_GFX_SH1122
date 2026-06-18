@@ -57,7 +57,7 @@ def main():
 
     for y in range(height):
         base = y * width
-        row_out = y * bytes_per_row
+        row_out = (height - 1 - y) * bytes_per_row
         for x in range(0, width, 2):
             lo = rgb_to_4bit(*pixels[base + x])
             hi = 0

@@ -197,6 +197,20 @@ void Adafruit_SH1122::writeRawPixel(int16_t x, int16_t y, uint8_t gray)
     setNibble(bufIdx(x, y), x & 1, gray);
 }
 
+void Adafruit_SH1122::drawTextCentered(int16_t x, int16_t y, const char *text)
+{
+    int16_t x1, y1;
+    uint16_t w, h;
+
+    getTextBounds(text, x, y, &x1, &y1, &w, &h);
+
+    uint16_t str_x = x - (w / 2);
+    uint16_t str_y = y - (h / 2);
+
+    setCursor(str_x, str_y);
+    print(text);
+}
+
 void Adafruit_SH1122::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
     if (color == SH1122_INVERSE)
@@ -235,7 +249,7 @@ void Adafruit_SH1122::drawImage(int16_t x, int16_t y, const uint8_t *data)
         for (uint16_t col = 0; col < imgW; col += 2)
         {
             uint8_t byte = pixels[imgIdx + (col >> 1)];
-            uint8_t left  = byte >> 4;
+            uint8_t left = byte >> 4;
             uint8_t right = byte & 0x0F;
 
             writeRawPixel(x + (int16_t)col, y + (int16_t)row, left);

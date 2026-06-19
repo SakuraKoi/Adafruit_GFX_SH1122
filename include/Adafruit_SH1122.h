@@ -58,6 +58,7 @@ public:
 
   void clearDisplay();
 
+  void drawTextCentered(int16_t x, int16_t y, const char *text);
   void drawPixel(int16_t x, int16_t y, uint16_t color) override;
   void fillScreen(uint16_t color) override;
 

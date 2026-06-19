@@ -15,6 +15,10 @@
 #define SH1122_INVERSE        0x10
 #define SH1122_TRANSPARENT    0x11
 
+#ifndef SH1122_CLOCK_DIV
+#define SH1122_CLOCK_DIV      0b01010000
+#endif
+
 #ifndef BLACK
 #define BLACK SH1122_BLACK
 #endif

@@ -77,7 +77,7 @@ void Adafruit_SH1122::sendInitSequence()
     sendCommand2(SH1122_CMD_MUX_RATIO, 0x3F);
     sendCommand2(SH1122_CMD_DCDC, 0x81);
 
-    sendCommand2(SH1122_CMD_CLOCK_DIV, 0x50);
+    sendCommand2(SH1122_CMD_CLOCK_DIV, SH1122_CLOCK_DIV);
     sendCommand2(SH1122_CMD_DISPLAY_OFFSET, 0x00);
     sendCommand2(SH1122_CMD_PRECHARGE, 0x22);
     sendCommand2(SH1122_CMD_VCOM_DESELECT, 0x35);

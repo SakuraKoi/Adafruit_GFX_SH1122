@@ -1,6 +1,6 @@
 {
   "name": "Adafruit-GFX-SH1122",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Adafruit_GFX backend for SH1122 256x64 16-grayscale OLED displays. Require 8 KiB memory as framebuffer.",
   "keywords": [
     "display",

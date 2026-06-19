@@ -59,11 +59,11 @@ def main():
         base = y * width
         row_out = (height - 1 - y) * bytes_per_row
         for x in range(0, width, 2):
-            lo = rgb_to_4bit(*pixels[base + x])
-            hi = 0
+            left  = rgb_to_4bit(*pixels[base + x])
+            right = 0
             if x + 1 < width:
-                hi = rgb_to_4bit(*pixels[base + x + 1])
-            pixel_bytes[row_out + (x // 2)] = (lo & 0x0F) | ((hi & 0x0F) << 4)
+                right = rgb_to_4bit(*pixels[base + x + 1])
+            pixel_bytes[row_out + (x // 2)] = ((left & 0x0F) << 4) | (right & 0x0F)
 
     data = bytearray(4 + len(pixel_bytes))
     struct.pack_into('<H', data, 0, width)

@@ -95,9 +95,9 @@ private:
   void logicalToPhysical(int16_t &x, int16_t &y);
 
   uint16_t bufIdx(int16_t x, int16_t y);
-  uint8_t getNibble(uint16_t idx, bool odd);
-  void setNibble(uint16_t idx, bool odd, uint8_t gray);
-  void invNibble(uint16_t idx, bool odd);
+  uint8_t getNibble(uint16_t idx, bool right);
+  void setNibble(uint16_t idx, bool right, uint8_t gray);
+  void invNibble(uint16_t idx, bool right);
   void setByte(uint16_t idx, uint8_t gray);
   void invByte(uint16_t idx);
 

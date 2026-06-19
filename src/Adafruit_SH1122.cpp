@@ -161,22 +161,22 @@ void Adafruit_SH1122::logicalToPhysical(int16_t &x, int16_t &y)
     }
 }
 
-uint8_t Adafruit_SH1122::getNibble(uint16_t idx, bool odd)
+uint8_t Adafruit_SH1122::getNibble(uint16_t idx, bool right)
 {
-    return odd ? (_buffer[idx] >> 4) : (_buffer[idx] & 0x0F);
+    return right ? (_buffer[idx] & 0x0F) : (_buffer[idx] >> 4);
 }
 
-void Adafruit_SH1122::setNibble(uint16_t idx, bool odd, uint8_t gray)
+void Adafruit_SH1122::setNibble(uint16_t idx, bool right, uint8_t gray)
 {
-    if (odd)
-        _buffer[idx] = (_buffer[idx] & 0x0F) | ((gray & 0x0F) << 4);
-    else
+    if (right)
         _buffer[idx] = (_buffer[idx] & 0xF0) | (gray & 0x0F);
+    else
+        _buffer[idx] = (_buffer[idx] & 0x0F) | ((gray & 0x0F) << 4);
 }
 
-void Adafruit_SH1122::invNibble(uint16_t idx, bool odd)
+void Adafruit_SH1122::invNibble(uint16_t idx, bool right)
 {
-    _buffer[idx] ^= odd ? 0xF0 : 0x0F;
+    _buffer[idx] ^= right ? 0x0F : 0xF0;
 }
 
 void Adafruit_SH1122::setByte(uint16_t idx, uint8_t gray)
@@ -235,12 +235,12 @@ void Adafruit_SH1122::drawImage(int16_t x, int16_t y, const uint8_t *data)
         for (uint16_t col = 0; col < imgW; col += 2)
         {
             uint8_t byte = pixels[imgIdx + (col >> 1)];
-            uint8_t lo = byte & 0x0F;
-            uint8_t hi = byte >> 4;
+            uint8_t left  = byte >> 4;
+            uint8_t right = byte & 0x0F;
 
-            writeRawPixel(x + (int16_t)col, y + (int16_t)row, lo);
+            writeRawPixel(x + (int16_t)col, y + (int16_t)row, left);
             if (col + 1 < imgW)
-                writeRawPixel(x + (int16_t)(col + 1), y + (int16_t)row, hi);
+                writeRawPixel(x + (int16_t)(col + 1), y + (int16_t)row, right);
         }
     }
 }
